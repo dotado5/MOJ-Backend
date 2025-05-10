@@ -4,13 +4,15 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-const MONGO_URI =
-  process.env.MONGO_URI ||
-  "mongodb+srv://oguntolagifted:Ebun777$@cluster0.2qfnfey.mongodb.net/MOJ_Web_Database?retryWrites=true&w=majority&appName=Cluster0";
+const MONGO_URL = process.env.MONGO_URL;
 
 export const connectDB = async () => {
+  if (!MONGO_URL) {
+    return null;
+  }
+
   try {
-    await mongoose.connect(MONGO_URI);
+    await mongoose.connect(MONGO_URL);
     console.log("✅ MongoDB connected successfully");
   } catch (error) {
     console.error("❌ MongoDB connection failed:", error);
