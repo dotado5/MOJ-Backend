@@ -1,4 +1,3 @@
-// src/config/database.ts
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 
@@ -16,10 +15,7 @@ export const connectDB = async () => {
     console.log("✅ MongoDB connected successfully");
     return;
   } catch (error) {
-    console.error("❌ MongoDB connection failed:", error);
-    process.exit(1); // Exit the app if MongoDB connection fails
-    return;
+    console.error("MongoDB connection failed:", error);
+    process.exit(1);
   }
 };
-
-// Usage

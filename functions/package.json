@@ -1,0 +1,43 @@
+{
+  "name": "functions",
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "serve": "npm run build && firebase emulators:start --only functions",
+    "shell": "npm run build && firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "22"
+  },
+  "main": "lib/index.js",
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^6.0.1",
+    "@aws-sdk/client-s3": "^3.828.0",
+    "@aws-sdk/lib-storage": "^3.828.0",
+    "@vercel/node": "^5.1.16",
+    "aws-sdk": "^2.1692.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "fs": "^0.0.1-security",
+    "mime-types": "^3.0.1",
+    "mongoose": "^8.14.1",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "firebase-functions-test": "^3.1.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "@types/mime-types": "^3.0.1",
+    "@types/mongoose": "^5.11.97",
+    "@types/node": "^22.15.3",
+    "nodemon": "^3.1.10",
+    "ts-node-dev": "^2.0.0"
+  },
+  "private": true
+}
