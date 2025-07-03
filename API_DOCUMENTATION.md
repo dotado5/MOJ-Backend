@@ -18,12 +18,13 @@ The homepage displays three main sections that require API data:
 - **Data Source**: Activities API
 - **Display**: Activities are grouped by month/year with activity names, dates, and descriptions
 
-#### 2. Latest Articles Section
+#### 2. Latest Articles Section ✅ **Enhanced with Author Data**
 - **Section**: "Latest Articles" 
-- **Purpose**: Shows the 4 most recent articles
-- **Data Source**: Articles API
-- **Display**: Article cards with images, titles, and truncated text (first 100 characters)
+- **Purpose**: Shows the 4 most recent articles with full author information
+- **Data Source**: Enhanced Articles API with Authors
+- **Display**: Article cards with S3 images, titles, author names, and excerpts
 - **Images**: Article thumbnails stored in AWS S3
+- **Authors**: Full author information populated from Author collection
 
 #### 3. Pastor's Corner Section
 - **Section**: "Pastor's Corner"
@@ -42,14 +43,16 @@ GET https://api-2at6qg5khq-uc.a.run.app/activity
 - **Used for**: Activities Timeline section
 - **Data Structure**: `{ _id, name, date, description }`
 
-#### 2. Articles Endpoint
+#### 2. Enhanced Articles Endpoint ✅ **Updated**
 ```
-GET https://api-2at6qg5khq-uc.a.run.app/article
+GET https://api-2at6qg5khq-uc.a.run.app/article/with-authors?page=1&limit=4
 ```
-- **Hook**: `useArticles()` → `getAllArticles()`
-- **Used for**: Latest Articles section (first 4 articles)
-- **Data Structure**: `{ displayImage, title, authorId, text, date, readTime }`
-- **Images**: `displayImage` contains S3 URLs for article thumbnails
+- **Hook**: `useArticles()` → `getAllArticlesWithAuthors(1, 4)`
+- **Used for**: Latest Articles section (first 4 articles with authors)
+- **Data Structure**: Enhanced articles with populated author information
+- **Images**: S3 URLs for article thumbnails
+- **Authors**: Full author details including names and profile images
+- **Features**: Read time calculation, time ago formatting, excerpts
 
 #### 3. Pastor Corner Endpoint
 ```
@@ -100,6 +103,41 @@ GET https://api-2at6qg5khq-uc.a.run.app/coordinator
 - **Used for**: Coordinators Spotlight section (filtered to exclude featured)
 - **Data Structure**: `{ _id, name, occupation, phone_number, image_url, about, isFeatured }`
 
+## Frontend Blog Page Integration ✅ **New**
+
+### Blog Page Location
+- **Frontend URL**: `https://church-site-seven.vercel.app/blogs`
+- **Page Component**: `Church-Site/Frontend/src/app/(main)/blogs/page.tsx`
+
+### Blog Page Data Requirements
+The blog page displays a comprehensive list of all articles with full author information:
+
+#### 1. Articles with Authors Section
+- **Section**: "Latest Articles"
+- **Purpose**: Shows all articles with full author details and pagination
+- **Data Source**: Enhanced Articles API with Authors
+- **Display**: Article cards with S3 images, titles, author information, excerpts, read times
+- **Features**: Pagination, search capability, responsive grid layout
+- **Images**: High-quality S3 thumbnails
+- **Authors**: Complete author profiles with names and images
+
+#### 2. Pagination Controls
+- **Purpose**: Navigate through large number of articles
+- **Features**: Previous/Next buttons, page numbers, article count display
+- **Performance**: Only loads articles for current page
+
+### Blog Page API Calls
+
+#### 1. Enhanced Articles with Pagination ✅ **New**
+```
+GET https://api-2at6qg5khq-uc.a.run.app/article/with-authors?page=1&limit=12
+```
+- **Hook**: `useArticles()` → `getAllArticlesWithAuthors(page, 12)`
+- **Used for**: All articles display with pagination
+- **Data Structure**: Enhanced articles with populated author information and pagination metadata
+- **Features**: Author names, profile images, calculated read times, time ago formatting
+- **Pagination**: Page controls, total counts, navigation state
+
 ## Complete API Endpoints
 
 ### Base URL
@@ -115,16 +153,18 @@ https://api-2at6qg5khq-uc.a.run.app
 - `PATCH /activity/:id` - Partially update activity
 - `DELETE /activity/:id` - Delete activity
 
-### 2. Article Endpoints ✅ **Updated with S3 Image Support**
-- `GET /article` - Get all articles ✅ **Used on Homepage**
-- `GET /article/:id` - Get article by ID
+### 2. Article Endpoints ✅ **Enhanced with Author Population & Blog Integration**
+- `GET /article` - Get all articles (basic) ✅ **Legacy endpoint**
+- `GET /article/with-authors` - Get articles with author info & pagination ✅ **New - Used on Homepage & Blog Page**
+- `GET /article/:id` - Get article by ID (basic)
+- `GET /article/:id/with-author` - Get article by ID with author info ✅ **New**
 - `POST /article` - Create article (JSON only)
-- `POST /article/with-image` - Create article with image upload ✅ **New**
-- `POST /article/upload-image` - Upload image only ✅ **New**
+- `POST /article/with-image` - Create article with image upload
+- `POST /article/upload-image` - Upload image only
 - `PUT /article/:id` - Update article (JSON only)
-- `PUT /article/:id/with-image` - Update article with image upload ✅ **New**
+- `PUT /article/:id/with-image` - Update article with image upload
 - `PATCH /article/:id` - Partially update article (JSON only)
-- `PATCH /article/:id/with-image` - Partially update article with image ✅ **New**
+- `PATCH /article/:id/with-image` - Partially update article with image
 - `DELETE /article/:id` - Delete article (also deletes S3 image)
 
 ### 3. Author Endpoints
@@ -318,11 +358,31 @@ interface Article {
 }
 ```
 
-### Author
+### Enhanced Article with Author ✅ **New**
+```typescript
+interface ArticleWithAuthor {
+  _id: string;
+  displayImage: string; // S3 URL or CloudFront URL
+  title: string;
+  authorId: string;
+  author: Author | null; // Populated author information
+  text: string;
+  excerpt: string; // First 150 characters + "..."
+  date: string;
+  formattedDate: string; // "January 1, 2024"
+  timeAgo: string; // "2 hours ago"
+  readTime: Date;
+  estimatedReadTime: string; // "5 mins read"
+}
+```
+
+### Author ✅ **Enhanced**
 ```typescript
 interface Author {
+  _id: string;
   firstName: string;
   lastName: string;
+  fullName: string; // Combined first and last name
   profileImage: string;
 }
 ```
@@ -465,6 +525,43 @@ CLOUDFRONT_URL=https://your-distribution.cloudfront.net
 }
 ```
 
+### Enhanced Articles Response ✅ **New**
+```json
+{
+  "status": "Success",
+  "message": "Articles with authors loaded successfully",
+  "data": [
+    {
+      "_id": "article_id",
+      "displayImage": "https://bucket.s3.amazonaws.com/articles/uuid.jpg",
+      "title": "Article Title",
+      "authorId": "author_id",
+      "author": {
+        "_id": "author_id",
+        "firstName": "John",
+        "lastName": "Doe",
+        "fullName": "John Doe",
+        "profileImage": "https://bucket.s3.amazonaws.com/authors/author.jpg"
+      },
+      "text": "Full article content...",
+      "excerpt": "First 150 characters of the article...",
+      "date": "2024-01-01T00:00:00Z",
+      "formattedDate": "January 1, 2024",
+      "timeAgo": "2 hours ago",
+      "readTime": "2024-01-01T00:05:00Z",
+      "estimatedReadTime": "5 mins read"
+    }
+  ],
+  "pagination": {
+    "currentPage": 1,
+    "totalPages": 5,
+    "totalArticles": 48,
+    "hasNextPage": true,
+    "hasPrevPage": false
+  }
+}
+```
+
 ### Featured Coordinator Response ✅ **New**
 ```json
 {
@@ -503,24 +600,30 @@ Currently, the API does not require authentication. All endpoints are publicly a
 
 1. **Homepage Performance**: The homepage makes 3 concurrent API calls on load
 2. **Coordinators Page Performance**: The coordinators page makes 2 concurrent API calls on load
-3. **Data Validation**: All update operations include validation
-4. **Image Management**: Automatic S3 cleanup when articles/coordinators are updated/deleted
-5. **Featured System**: Only one coordinator can be featured at a time
-6. **Deployment**: Backend deployed on Google Cloud Run
-7. **Frontend**: Deployed on Vercel
+3. **Blog Page Performance**: The blog page makes 1 API call with pagination for optimal loading
+4. **Data Validation**: All update operations include validation
+5. **Image Management**: Automatic S3 cleanup when articles/coordinators are updated/deleted
+6. **Featured System**: Only one coordinator can be featured at a time
+7. **Author Population**: Articles automatically include full author information
+8. **Read Time Calculation**: Estimated reading time calculated at 200 words per minute
+9. **Deployment**: Backend deployed on Google Cloud Run
+10. **Frontend**: Deployed on Vercel
 
 ## API Statistics
 
-**Total Endpoints**: **56**
+**Total Endpoints**: **58**
 - **7 entities** with full CRUD operations
 - **8 image upload endpoints** (4 articles + 4 coordinators)
-- **4 special endpoints** (featured coordinator, active pastor, latest pastor corner, posts by pastor)
+- **6 special endpoints** (featured coordinator, active pastor, latest pastor corner, posts by pastor, articles with authors, article by ID with author)
 
 **Homepage API Calls**: **3**
-- Activities, Articles (with S3 images), and Pastor Corner
+- Activities, Enhanced Articles (with S3 images & authors), and Pastor Corner
 
 **Coordinators Page API Calls**: **2**
 - Featured Coordinator and All Coordinators (with S3 images)
+
+**Blog Page API Calls**: **1**
+- Enhanced Articles with Authors and Pagination (with S3 images)
 
 ## Recent Improvements
 
@@ -530,19 +633,19 @@ Currently, the API does not require authentication. All endpoints are publicly a
 - **Features**: Upload, update, delete, validation, CDN support
 - **Benefits**: Scalable, secure, fast image delivery
 
-### S3 Image Integration for Coordinators ✅ **New**
+### S3 Image Integration for Coordinators ✅ **Previous**
 - **Before**: Hardcoded image URLs and dummy data
 - **After**: Professional S3 integration with automatic management
 - **Features**: Upload, update, delete, validation, CDN support for coordinator profile images
 - **Benefits**: Scalable, secure, fast image delivery
 
-### Featured Coordinator System ✅ **New**
+### Featured Coordinator System ✅ **Previous**
 - **Before**: Hardcoded search for "Fatoki Victor"
 - **After**: Dynamic featured coordinator system based on database field
 - **Features**: Set any coordinator as featured, automatic featured status management
 - **Benefits**: Flexible, dynamic, admin-controllable
 
-### Coordinators Page Evolution ✅ **New**
+### Coordinators Page Evolution ✅ **Previous**
 - **Before**: Hardcoded "Fatoki Victor" lookup and dummy data in spotlight
 - **After**: Dynamic featured coordinator and real data for all coordinators
 - **Features**: 
@@ -552,6 +655,38 @@ Currently, the API does not require authentication. All endpoints are publicly a
   - Concurrent API calls for optimal performance
   - Fallback handling when no featured coordinator exists
 - **Benefits**: Fully dynamic, data-driven, maintainable
+
+### Blog Page Integration ✅ **New**
+- **Before**: Mixed dummy and real data, hardcoded authors, static images
+- **After**: Fully dynamic blog page with complete author integration
+- **Features**:
+  - Real author information populated from Author collection
+  - S3 images for all article thumbnails
+  - Calculated read times based on word count
+  - Time ago formatting ("2 hours ago", "3 days ago")
+  - Article excerpts automatically generated
+  - Pagination for large article collections
+  - Responsive grid layout
+  - Loading states and error handling
+- **Benefits**: Professional blog experience, scalable content management
+
+### Enhanced Articles System ✅ **New**
+- **Before**: Basic article data without author details
+- **After**: Rich article objects with populated author information
+- **Features**:
+  - Author names, profile images, and full details
+  - Smart read time calculation (200 words per minute)
+  - Automatic excerpt generation (first 150 characters)
+  - Multiple date formats (formatted date, time ago)
+  - Pagination support for large datasets
+  - Fallback handling for missing authors
+- **Benefits**: Rich content display, better user experience
+
+### Homepage Articles Enhancement ✅ **New**
+- **Before**: Homepage mixed dummy data with real article content
+- **After**: Homepage uses enhanced articles with full author data
+- **Features**: Real S3 images, author names, proper read times, excerpts
+- **Benefits**: Consistent data across homepage and blog page
 
 ### Pastor's Corner Evolution ✅ **Previous**
 - **Before**: Static hardcoded welcome message
@@ -567,19 +702,24 @@ Currently, the API does not require authentication. All endpoints are publicly a
 - **Automatic Cleanup**: Old images deleted when articles/coordinators updated/removed
 - **CDN Support**: CloudFront integration for faster global delivery
 - **Dynamic Content**: Pastor corner posts and featured coordinators can be created and managed
+- **Author Integration**: Complete author-article relationship with population
+- **Smart Calculations**: Automatic read time estimation and excerpt generation
+- **Date Formatting**: Multiple date display formats for better UX
+- **Pagination System**: Efficient handling of large article collections
 - **Pastor Association**: Each post is tied to a specific pastor
 - **Publication Control**: Posts can be published/unpublished
 - **Homepage Integration**: Latest post automatically appears
 - **Coordinators Page Integration**: Featured coordinator and all coordinators display properly
-- **Fallback Support**: Graceful handling when no posts/coordinators exist
+- **Blog Page Integration**: Professional blog experience with full author details
+- **Fallback Support**: Graceful handling when no posts/coordinators/authors exist
 - **Featured System**: One coordinator can be featured at a time with automatic management
 
 ## Future Enhancements
 
 Potential areas for improvement:
 - Add authentication and authorization
-- Implement pagination for large datasets
-- Add search and filtering capabilities
+- Implement search functionality for articles
+- Add article categories and tags
 - Include rate limiting
 - Add request validation middleware
 - Implement caching for frequently accessed data
@@ -588,4 +728,13 @@ Potential areas for improvement:
 - Implement image metadata extraction
 - Add coordinator search and filtering
 - Add coordinator categories/departments
-- Implement coordinator rotation system for featured status 
+- Implement coordinator rotation system for featured status
+- Add article comments system
+- Implement article bookmarking
+- Add social sharing capabilities
+- Create RSS feed for articles
+- Add article draft system
+- Implement article versioning 
+- Add article draft system
+- Implement article versioning 
+- Implement caching for frequently accessed data 

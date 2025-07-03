@@ -4,7 +4,9 @@ import {
   createArticleWithImage,
   uploadArticleImage,
   getAllArticles,
+  getAllArticlesWithAuthors,
   getArticleById,
+  getArticleByIdWithAuthor,
   updateArticle,
   updateArticleWithImage,
   deleteArticle,
@@ -96,6 +98,96 @@ articleRoutes.post("/with-image", uploadSingle("image"), handleUploadError, crea
 
 /**
  * @swagger
+ * /articles/with-authors:
+ *   get:
+ *     summary: Get all articles with author information
+ *     description: Retrieve all articles with populated author data, pagination, and enhanced metadata for blog page
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         type: integer
+ *         description: Page number (default: 1)
+ *         example: 1
+ *       - in: query
+ *         name: limit
+ *         type: integer
+ *         description: Number of articles per page (default: 10)
+ *         example: 10
+ *     responses:
+ *       200:
+ *         description: Articles with authors loaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: Success
+ *                 message:
+ *                   type: string
+ *                   example: Articles with authors loaded successfully
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       _id:
+ *                         type: string
+ *                       displayImage:
+ *                         type: string
+ *                         example: https://bucket.s3.amazonaws.com/articles/uuid.jpg
+ *                       title:
+ *                         type: string
+ *                       authorId:
+ *                         type: string
+ *                       author:
+ *                         type: object
+ *                         properties:
+ *                           _id:
+ *                             type: string
+ *                           firstName:
+ *                             type: string
+ *                           lastName:
+ *                             type: string
+ *                           fullName:
+ *                             type: string
+ *                           profileImage:
+ *                             type: string
+ *                       text:
+ *                         type: string
+ *                       excerpt:
+ *                         type: string
+ *                       date:
+ *                         type: string
+ *                       formattedDate:
+ *                         type: string
+ *                       timeAgo:
+ *                         type: string
+ *                         example: 2 hours ago
+ *                       estimatedReadTime:
+ *                         type: string
+ *                         example: 5 mins read
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     currentPage:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *                     totalArticles:
+ *                       type: integer
+ *                     hasNextPage:
+ *                       type: boolean
+ *                     hasPrevPage:
+ *                       type: boolean
+ *       500:
+ *         description: Internal server error
+ */
+articleRoutes.get("/with-authors", getAllArticlesWithAuthors);
+
+/**
+ * @swagger
  * /articles:
  *   post:
  *     summary: Create a new article
@@ -182,8 +274,11 @@ articleRoutes.post("/", createArticle);
  */
 articleRoutes.get("/", getAllArticles);
 
-// Get article by ID
+// Get article by ID (basic)
 articleRoutes.get("/:id", getArticleById);
+
+// Get article by ID with author information
+articleRoutes.get("/:id/with-author", getArticleByIdWithAuthor);
 
 // Update article by ID (JSON only)
 articleRoutes.put("/:id", updateArticle);
