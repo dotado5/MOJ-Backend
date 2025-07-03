@@ -59,6 +59,47 @@ GET https://api-2at6qg5khq-uc.a.run.app/pastor-corner/latest
 - **Used for**: Pastor's Corner section (latest published post)
 - **Data Structure**: `{ _id, title, content, pastorId, datePublished, isPublished }`
 
+## Frontend Coordinators Page Integration
+
+### Coordinators Page Location
+- **Frontend URL**: `https://church-site-seven.vercel.app/coordinators`
+- **Page Component**: `Church-Site/Frontend/src/app/(main)/coordinators/page.tsx`
+
+### Coordinators Page Data Requirements
+The coordinators page displays two main sections:
+
+#### 1. Coordinator of the Month Section
+- **Section**: "Coordinator of the Month"
+- **Purpose**: Shows the featured coordinator with full details
+- **Data Source**: Featured Coordinator API
+- **Display**: Name, occupation, phone, image, and biography
+- **Dynamic**: Based on `isFeatured` field in database
+
+#### 2. Coordinators Spotlight Section
+- **Section**: "Coordinators Spotlight"
+- **Purpose**: Shows all non-featured coordinators in a grid
+- **Data Source**: All Coordinators API (filtered to exclude featured)
+- **Display**: Coordinator cards with image, name, occupation, and phone
+- **Images**: Coordinator profile images stored in AWS S3
+
+### Coordinators Page API Calls
+
+#### 1. Featured Coordinator Endpoint ✅ **New**
+```
+GET https://api-2at6qg5khq-uc.a.run.app/coordinator/featured
+```
+- **Hook**: `useCoordinator()` → `getFeaturedCoordinator()`
+- **Used for**: Coordinator of the Month section
+- **Data Structure**: `{ _id, name, occupation, phone_number, image_url, about, isFeatured: true }`
+
+#### 2. All Coordinators Endpoint
+```
+GET https://api-2at6qg5khq-uc.a.run.app/coordinator
+```
+- **Hook**: `useCoordinator()` → `getAllCoordinators()`
+- **Used for**: Coordinators Spotlight section (filtered to exclude featured)
+- **Data Structure**: `{ _id, name, occupation, phone_number, image_url, about, isFeatured }`
+
 ## Complete API Endpoints
 
 ### Base URL
@@ -94,13 +135,19 @@ https://api-2at6qg5khq-uc.a.run.app
 - `PATCH /author/:id` - Partially update author
 - `DELETE /author/:id` - Delete author
 
-### 4. Coordinator Endpoints
-- `GET /coordinator` - Get all coordinators
+### 4. Coordinator Endpoints ✅ **Updated with S3 Image Support & Featured System**
+- `GET /coordinator` - Get all coordinators ✅ **Used on Coordinators Page**
+- `GET /coordinator/featured` - Get featured coordinator ✅ **New - Used on Coordinators Page**
 - `GET /coordinator/:id` - Get coordinator by ID
-- `POST /coordinator` - Create coordinator
-- `PUT /coordinator/:id` - Update coordinator
-- `PATCH /coordinator/:id` - Partially update coordinator
-- `DELETE /coordinator/:id` - Delete coordinator
+- `POST /coordinator` - Create coordinator (JSON only)
+- `POST /coordinator/with-image` - Create coordinator with image upload ✅ **New**
+- `POST /coordinator/upload-image` - Upload image only ✅ **New**
+- `PUT /coordinator/:id` - Update coordinator (JSON only)
+- `PUT /coordinator/:id/with-image` - Update coordinator with image upload ✅ **New**
+- `PATCH /coordinator/:id` - Partially update coordinator (JSON only)
+- `PATCH /coordinator/:id/with-image` - Partially update coordinator with image ✅ **New**
+- `PATCH /coordinator/:id/featured` - Set coordinator as featured ✅ **New**
+- `DELETE /coordinator/:id` - Delete coordinator (also deletes S3 image)
 
 ### 5. Memory Endpoints
 - `GET /memory` - Get all memories
@@ -132,7 +179,7 @@ https://api-2at6qg5khq-uc.a.run.app
 ## Image Upload System
 
 ### AWS S3 Integration
-The API includes comprehensive S3 integration for handling article thumbnail images:
+The API includes comprehensive S3 integration for handling images:
 
 #### Features
 - ✅ **Secure Upload**: Images uploaded directly to AWS S3
@@ -160,12 +207,16 @@ moj-article-images/
 │   ├── uuid-1.jpg
 │   ├── uuid-2.png
 │   └── ...
+├── coordinators/
+│   ├── uuid-3.jpg
+│   ├── uuid-4.png
+│   └── ...
 └── pastors/
-    ├── uuid-3.jpg
+    ├── uuid-5.jpg
     └── ...
 ```
 
-### Image Upload Endpoints
+### Article Image Upload Endpoints
 
 #### Upload Article Image Only
 ```
@@ -203,6 +254,46 @@ Body:
 - readTime: Date (optional)
 ```
 
+### Coordinator Image Upload Endpoints ✅ **New**
+
+#### Upload Coordinator Image Only
+```
+POST /coordinator/upload-image
+Content-Type: multipart/form-data
+
+Body:
+- image: File (required)
+```
+
+#### Create Coordinator with Image
+```
+POST /coordinator/with-image
+Content-Type: multipart/form-data
+
+Body:
+- image: File (optional)
+- name: String (required)
+- occupation: String (required)
+- phone_number: String (required)
+- about: String (required)
+- isFeatured: Boolean (optional, default: false)
+```
+
+#### Update Coordinator with Image
+```
+PUT /coordinator/:id/with-image
+PATCH /coordinator/:id/with-image
+Content-Type: multipart/form-data
+
+Body:
+- image: File (optional) - replaces existing image if provided
+- name: String (optional)
+- occupation: String (optional)
+- phone_number: String (optional)
+- about: String (optional)
+- isFeatured: Boolean (optional)
+```
+
 ## Data Models
 
 ### Activity
@@ -236,14 +327,16 @@ interface Author {
 }
 ```
 
-### Coordinator
+### Coordinator ✅ **Updated with S3 Support & Featured System**
 ```typescript
 interface Coordinator {
+  _id: string;
   name: string;
   occupation: string;
   phone_number: string;
-  image_url: string;
+  image_url: string; // S3 URL or CloudFront URL
   about: string;
+  isFeatured: boolean; // New field for featured coordinator
 }
 ```
 
@@ -372,6 +465,23 @@ CLOUDFRONT_URL=https://your-distribution.cloudfront.net
 }
 ```
 
+### Featured Coordinator Response ✅ **New**
+```json
+{
+  "status": "Success",
+  "message": "Featured coordinator loaded successfully",
+  "data": {
+    "_id": "coordinator_id",
+    "name": "John Doe",
+    "occupation": "Senior Coordinator",
+    "phone_number": "+234123456789",
+    "image_url": "https://bucket.s3.amazonaws.com/coordinators/uuid.jpg",
+    "about": "Biography and background information...",
+    "isFeatured": true
+  }
+}
+```
+
 ## CORS Configuration
 
 The API allows requests from:
@@ -392,31 +502,58 @@ Currently, the API does not require authentication. All endpoints are publicly a
 ## Usage Notes
 
 1. **Homepage Performance**: The homepage makes 3 concurrent API calls on load
-2. **Data Validation**: All update operations include validation
-3. **Error Handling**: Comprehensive error handling with proper HTTP status codes
-4. **Image Management**: Automatic S3 cleanup when articles are updated/deleted
-5. **Deployment**: Backend deployed on Google Cloud Run
-6. **Frontend**: Deployed on Vercel
+2. **Coordinators Page Performance**: The coordinators page makes 2 concurrent API calls on load
+3. **Data Validation**: All update operations include validation
+4. **Image Management**: Automatic S3 cleanup when articles/coordinators are updated/deleted
+5. **Featured System**: Only one coordinator can be featured at a time
+6. **Deployment**: Backend deployed on Google Cloud Run
+7. **Frontend**: Deployed on Vercel
 
 ## API Statistics
 
-**Total Endpoints**: **49**
+**Total Endpoints**: **56**
 - **7 entities** with full CRUD operations
-- **4 image upload endpoints** for articles
-- **3 special endpoints** (active pastor, latest pastor corner, posts by pastor)
+- **8 image upload endpoints** (4 articles + 4 coordinators)
+- **4 special endpoints** (featured coordinator, active pastor, latest pastor corner, posts by pastor)
 
 **Homepage API Calls**: **3**
 - Activities, Articles (with S3 images), and Pastor Corner
 
+**Coordinators Page API Calls**: **2**
+- Featured Coordinator and All Coordinators (with S3 images)
+
 ## Recent Improvements
 
-### S3 Image Integration ✅ **New**
+### S3 Image Integration for Articles ✅ **Previous**
 - **Before**: Article images stored as URLs or file paths
 - **After**: Professional S3 integration with automatic management
 - **Features**: Upload, update, delete, validation, CDN support
 - **Benefits**: Scalable, secure, fast image delivery
 
-### Pastor's Corner Evolution
+### S3 Image Integration for Coordinators ✅ **New**
+- **Before**: Hardcoded image URLs and dummy data
+- **After**: Professional S3 integration with automatic management
+- **Features**: Upload, update, delete, validation, CDN support for coordinator profile images
+- **Benefits**: Scalable, secure, fast image delivery
+
+### Featured Coordinator System ✅ **New**
+- **Before**: Hardcoded search for "Fatoki Victor"
+- **After**: Dynamic featured coordinator system based on database field
+- **Features**: Set any coordinator as featured, automatic featured status management
+- **Benefits**: Flexible, dynamic, admin-controllable
+
+### Coordinators Page Evolution ✅ **New**
+- **Before**: Hardcoded "Fatoki Victor" lookup and dummy data in spotlight
+- **After**: Dynamic featured coordinator and real data for all coordinators
+- **Features**: 
+  - Dynamic "Coordinator of the Month" based on `isFeatured` field
+  - Real coordinator data in spotlight section
+  - S3 image support for all coordinator profiles
+  - Concurrent API calls for optimal performance
+  - Fallback handling when no featured coordinator exists
+- **Benefits**: Fully dynamic, data-driven, maintainable
+
+### Pastor's Corner Evolution ✅ **Previous**
 - **Before**: Static hardcoded welcome message
 - **After**: Dynamic pastor corner posts tied to specific pastors
 - **Features**: Latest published post automatically shows on homepage
@@ -425,15 +562,17 @@ Currently, the API does not require authentication. All endpoints are publicly a
 - **Attribution**: Publication date display and pastor relationship
 
 ### Key Features Added
-- **S3 Image Storage**: Professional cloud storage for article thumbnails
+- **S3 Image Storage**: Professional cloud storage for article and coordinator images
 - **Image Validation**: Type and size validation with proper error handling
-- **Automatic Cleanup**: Old images deleted when articles updated/removed
+- **Automatic Cleanup**: Old images deleted when articles/coordinators updated/removed
 - **CDN Support**: CloudFront integration for faster global delivery
-- **Dynamic Content**: Pastor corner posts can be created and managed
+- **Dynamic Content**: Pastor corner posts and featured coordinators can be created and managed
 - **Pastor Association**: Each post is tied to a specific pastor
 - **Publication Control**: Posts can be published/unpublished
 - **Homepage Integration**: Latest post automatically appears
-- **Fallback Support**: Graceful handling when no posts exist
+- **Coordinators Page Integration**: Featured coordinator and all coordinators display properly
+- **Fallback Support**: Graceful handling when no posts/coordinators exist
+- **Featured System**: One coordinator can be featured at a time with automatic management
 
 ## Future Enhancements
 
@@ -444,6 +583,9 @@ Potential areas for improvement:
 - Include rate limiting
 - Add request validation middleware
 - Implement caching for frequently accessed data
-- Extend S3 integration to other entities (Pastor, Coordinator images)
+- Extend S3 integration to other entities (Pastor images, Memory images)
 - Add image resizing and optimization
-- Implement image metadata extraction 
+- Implement image metadata extraction
+- Add coordinator search and filtering
+- Add coordinator categories/departments
+- Implement coordinator rotation system for featured status 
