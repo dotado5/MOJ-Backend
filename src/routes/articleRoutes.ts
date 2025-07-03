@@ -2,6 +2,9 @@ import express from "express";
 import {
   createArticle,
   getAllArticles,
+  getArticleById,
+  updateArticle,
+  deleteArticle,
 } from "../controllers/ArticleControllers";
 
 const articleRoutes = express.Router();
@@ -93,5 +96,15 @@ articleRoutes.post("/", createArticle);
  *         description: Internal server error.
  */
 articleRoutes.get("/", getAllArticles);
+
+// Get article by ID
+articleRoutes.get("/:id", getArticleById);
+
+// Update article by ID
+articleRoutes.put("/:id", updateArticle);
+articleRoutes.patch("/:id", updateArticle);
+
+// Delete article by ID
+articleRoutes.delete("/:id", deleteArticle);
 
 export default articleRoutes;

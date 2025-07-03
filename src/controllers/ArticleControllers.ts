@@ -35,4 +35,79 @@ const getAllArticles = async (req: Request, res: Response) => {
   }
 };
 
-export { createArticle, getAllArticles };
+const getArticleById = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const article = await Article.findById(id);
+
+    if (!article) {
+      return res.status(404).send({
+        status: "Error",
+        message: "Article not found",
+      });
+    }
+
+    res.status(200).send({
+      status: "Success",
+      message: "Article loaded successfully",
+      data: article,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: err });
+  }
+};
+
+const updateArticle = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const body = req.body;
+
+    const updatedArticle = await Article.findByIdAndUpdate(id, body, {
+      new: true,
+      runValidators: true,
+    });
+
+    if (!updatedArticle) {
+      return res.status(404).send({
+        status: "Error",
+        message: "Article not found",
+      });
+    }
+
+    res.status(200).send({
+      status: "Success",
+      message: "Article updated successfully",
+      data: updatedArticle,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: err });
+  }
+};
+
+const deleteArticle = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const deletedArticle = await Article.findByIdAndDelete(id);
+
+    if (!deletedArticle) {
+      return res.status(404).send({
+        status: "Error",
+        message: "Article not found",
+      });
+    }
+
+    res.status(200).send({
+      status: "Success",
+      message: "Article deleted successfully",
+      data: deletedArticle,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: err });
+  }
+};
+
+export { createArticle, getAllArticles, getArticleById, updateArticle, deleteArticle };

@@ -1,5 +1,5 @@
 import express from "express";
-import { uploadMemory, getAllMemories } from "../controllers/MemoryController";
+import { uploadMemory, getAllMemories, getMemoryById, updateMemory, deleteMemory } from "../controllers/MemoryController";
 
 const memoryRoutes = express.Router();
 
@@ -82,5 +82,15 @@ memoryRoutes.post("/", uploadMemory);
  *         description: Internal server error.
  */
 memoryRoutes.get("/", getAllMemories);
+
+// Get memory by ID
+memoryRoutes.get("/:id", getMemoryById);
+
+// Update memory by ID
+memoryRoutes.put("/:id", updateMemory);
+memoryRoutes.patch("/:id", updateMemory);
+
+// Delete memory by ID
+memoryRoutes.delete("/:id", deleteMemory);
 
 export default memoryRoutes;
