@@ -8,6 +8,7 @@ import authorRoutes from "./routes/authorRoutes";
 import cors from "cors";
 import coordinatorRoutes from "./routes/coordinatorRoutes";
 import pastorRoutes from "./routes/pastorRoutes";
+import pastorCornerRoutes from "./routes/pastorCornerRoutes";
 
 dotenv.config();
 
@@ -32,6 +33,7 @@ app.use("/author", authorRoutes);
 app.use("/memory", memoryRoutes);
 app.use("/coordinator", coordinatorRoutes);
 app.use("/pastor", pastorRoutes);
+app.use("/pastor-corner", pastorCornerRoutes);
 
 app.get("/", (req: Request, res: Response) => {
   res.send("API is running...");
