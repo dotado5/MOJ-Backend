@@ -110,3 +110,4 @@ The backend is deployed on Google Cloud Run at:
 ## License
 
 This project is private and proprietary to the Minds of Josiah church.
+cle

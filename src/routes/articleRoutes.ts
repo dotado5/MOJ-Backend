@@ -1,13 +1,98 @@
 import express from "express";
 import {
   createArticle,
+  createArticleWithImage,
+  uploadArticleImage,
   getAllArticles,
   getArticleById,
   updateArticle,
+  updateArticleWithImage,
   deleteArticle,
 } from "../controllers/ArticleControllers";
+import { uploadSingle, handleUploadError } from "../middleware/uploadMiddleware";
 
 const articleRoutes = express.Router();
+
+/**
+ * @swagger
+ * /articles/upload-image:
+ *   post:
+ *     summary: Upload an article image
+ *     description: Upload an image file to S3 for article thumbnail
+ *     consumes:
+ *       - multipart/form-data
+ *     parameters:
+ *       - in: formData
+ *         name: image
+ *         type: file
+ *         required: true
+ *         description: Image file to upload (max 5MB)
+ *     responses:
+ *       200:
+ *         description: Image uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: Success
+ *                 message:
+ *                   type: string
+ *                   example: Image uploaded successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     imageUrl:
+ *                       type: string
+ *                       example: https://bucket.s3.amazonaws.com/articles/uuid.jpg
+ *       400:
+ *         description: Bad request (no file, invalid file type, etc.)
+ *       500:
+ *         description: Internal server error
+ */
+articleRoutes.post("/upload-image", uploadSingle("image"), handleUploadError, uploadArticleImage);
+
+/**
+ * @swagger
+ * /articles/with-image:
+ *   post:
+ *     summary: Create a new article with image
+ *     description: Create a new article and upload thumbnail image in one request
+ *     consumes:
+ *       - multipart/form-data
+ *     parameters:
+ *       - in: formData
+ *         name: image
+ *         type: file
+ *         required: false
+ *         description: Article thumbnail image
+ *       - in: formData
+ *         name: title
+ *         type: string
+ *         required: true
+ *       - in: formData
+ *         name: authorId
+ *         type: string
+ *         required: true
+ *       - in: formData
+ *         name: text
+ *         type: string
+ *         required: true
+ *       - in: formData
+ *         name: readTime
+ *         type: string
+ *         required: true
+ *     responses:
+ *       201:
+ *         description: Article created successfully with image
+ *       400:
+ *         description: Bad request
+ *       500:
+ *         description: Internal server error
+ */
+articleRoutes.post("/with-image", uploadSingle("image"), handleUploadError, createArticleWithImage);
 
 /**
  * @swagger
@@ -24,7 +109,7 @@ const articleRoutes = express.Router();
  *             properties:
  *               displayImage:
  *                 type: string
- *                 example: "Saint"
+ *                 example: "https://bucket.s3.amazonaws.com/articles/image.jpg"
  *               title:
  *                 type: string
  *                 example: "The Title of the Article"
@@ -100,9 +185,13 @@ articleRoutes.get("/", getAllArticles);
 // Get article by ID
 articleRoutes.get("/:id", getArticleById);
 
-// Update article by ID
+// Update article by ID (JSON only)
 articleRoutes.put("/:id", updateArticle);
 articleRoutes.patch("/:id", updateArticle);
+
+// Update article with image upload
+articleRoutes.put("/:id/with-image", uploadSingle("image"), handleUploadError, updateArticleWithImage);
+articleRoutes.patch("/:id/with-image", uploadSingle("image"), handleUploadError, updateArticleWithImage);
 
 // Delete article by ID
 articleRoutes.delete("/:id", deleteArticle);

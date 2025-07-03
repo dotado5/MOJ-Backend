@@ -23,6 +23,7 @@ The homepage displays three main sections that require API data:
 - **Purpose**: Shows the 4 most recent articles
 - **Data Source**: Articles API
 - **Display**: Article cards with images, titles, and truncated text (first 100 characters)
+- **Images**: Article thumbnails stored in AWS S3
 
 #### 3. Pastor's Corner Section
 - **Section**: "Pastor's Corner"
@@ -48,6 +49,7 @@ GET https://api-2at6qg5khq-uc.a.run.app/article
 - **Hook**: `useArticles()` → `getAllArticles()`
 - **Used for**: Latest Articles section (first 4 articles)
 - **Data Structure**: `{ displayImage, title, authorId, text, date, readTime }`
+- **Images**: `displayImage` contains S3 URLs for article thumbnails
 
 #### 3. Pastor Corner Endpoint
 ```
@@ -72,13 +74,17 @@ https://api-2at6qg5khq-uc.a.run.app
 - `PATCH /activity/:id` - Partially update activity
 - `DELETE /activity/:id` - Delete activity
 
-### 2. Article Endpoints
+### 2. Article Endpoints ✅ **Updated with S3 Image Support**
 - `GET /article` - Get all articles ✅ **Used on Homepage**
 - `GET /article/:id` - Get article by ID
-- `POST /article` - Create article
-- `PUT /article/:id` - Update article
-- `PATCH /article/:id` - Partially update article
-- `DELETE /article/:id` - Delete article
+- `POST /article` - Create article (JSON only)
+- `POST /article/with-image` - Create article with image upload ✅ **New**
+- `POST /article/upload-image` - Upload image only ✅ **New**
+- `PUT /article/:id` - Update article (JSON only)
+- `PUT /article/:id/with-image` - Update article with image upload ✅ **New**
+- `PATCH /article/:id` - Partially update article (JSON only)
+- `PATCH /article/:id/with-image` - Partially update article with image ✅ **New**
+- `DELETE /article/:id` - Delete article (also deletes S3 image)
 
 ### 3. Author Endpoints
 - `GET /author` - Get all authors
@@ -123,6 +129,80 @@ https://api-2at6qg5khq-uc.a.run.app
 - `PATCH /pastor-corner/:id` - Partially update pastor corner post
 - `DELETE /pastor-corner/:id` - Delete pastor corner post
 
+## Image Upload System
+
+### AWS S3 Integration
+The API includes comprehensive S3 integration for handling article thumbnail images:
+
+#### Features
+- ✅ **Secure Upload**: Images uploaded directly to AWS S3
+- ✅ **Automatic Cleanup**: Old images deleted when updated/removed
+- ✅ **File Validation**: Type and size validation (max 5MB)
+- ✅ **Unique Naming**: UUID-based filenames prevent conflicts
+- ✅ **CDN Support**: CloudFront integration for faster delivery
+- ✅ **Multiple Formats**: Supports JPG, PNG, GIF, WebP, SVG
+
+#### Supported Image Types
+- JPEG/JPG
+- PNG  
+- GIF
+- WebP
+- SVG
+
+#### File Size Limits
+- **Maximum**: 5MB per image
+- **Recommended**: 1MB or less for optimal performance
+
+#### S3 Bucket Structure
+```
+moj-article-images/
+├── articles/
+│   ├── uuid-1.jpg
+│   ├── uuid-2.png
+│   └── ...
+└── pastors/
+    ├── uuid-3.jpg
+    └── ...
+```
+
+### Image Upload Endpoints
+
+#### Upload Article Image Only
+```
+POST /article/upload-image
+Content-Type: multipart/form-data
+
+Body:
+- image: File (required)
+```
+
+#### Create Article with Image
+```
+POST /article/with-image
+Content-Type: multipart/form-data
+
+Body:
+- image: File (optional)
+- title: String (required)
+- authorId: String (required)
+- text: String (required)
+- readTime: Date (required)
+```
+
+#### Update Article with Image
+```
+PUT /article/:id/with-image
+PATCH /article/:id/with-image
+Content-Type: multipart/form-data
+
+Body:
+- image: File (optional) - replaces existing image if provided
+- title: String (optional)
+- authorId: String (optional)
+- text: String (optional)
+- readTime: Date (optional)
+```
+
 ## Data Models
 
 ### Activity
@@ -135,10 +215,10 @@ interface Activity {
 }
 ```
 
-### Article
+### Article ✅ **Updated with S3 Support**
 ```typescript
 interface Article {
-  displayImage: string;
+  displayImage: string; // S3 URL or CloudFront URL
   title: string;
   authorId: string;
   text: string;
@@ -207,6 +287,51 @@ interface PastorCorner {
 }
 ```
 
+## Environment Configuration
+
+### Required Environment Variables
+```env
+# Database
+MONGO_URL=your_mongodb_connection_string
+
+# Server
+PORT=5000
+
+# AWS S3 (Required for image uploads)
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
+AWS_S3_BUCKET=moj-article-images
+
+# Optional: CloudFront CDN
+CLOUDFRONT_URL=https://your-distribution.cloudfront.net
+```
+
+### AWS S3 Setup
+1. **Create S3 Bucket**: Create a bucket for storing images
+2. **Configure Permissions**: Set bucket policy for public read access
+3. **IAM User**: Create IAM user with S3 permissions
+4. **CloudFront** (Optional): Set up CDN for faster image delivery
+
+### Required S3 Permissions
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:GetObject",
+        "s3:DeleteObject"
+      ],
+      "Resource": "arn:aws:s3:::moj-article-images/*"
+    }
+  ]
+}
+```
+
 ## Response Format
 
 ### Success Response
@@ -233,6 +358,20 @@ interface PastorCorner {
 }
 ```
 
+### Image Upload Response
+```json
+{
+  "status": "Success",
+  "message": "Image uploaded successfully",
+  "data": {
+    "imageUrl": "https://bucket.s3.amazonaws.com/articles/uuid.jpg",
+    "originalName": "thumbnail.jpg",
+    "size": 245760,
+    "mimetype": "image/jpeg"
+  }
+}
+```
+
 ## CORS Configuration
 
 The API allows requests from:
@@ -244,6 +383,7 @@ The API allows requests from:
 - **Type**: MongoDB
 - **Connection**: Configured via environment variables
 - **Models**: Activity, Article, Author, Coordinator, Memory, Pastor, PastorCorner
+- **Storage**: Images stored in AWS S3, URLs in MongoDB
 
 ## Authentication
 
@@ -254,19 +394,27 @@ Currently, the API does not require authentication. All endpoints are publicly a
 1. **Homepage Performance**: The homepage makes 3 concurrent API calls on load
 2. **Data Validation**: All update operations include validation
 3. **Error Handling**: Comprehensive error handling with proper HTTP status codes
-4. **Deployment**: Backend deployed on Google Cloud Run
-5. **Frontend**: Deployed on Vercel
+4. **Image Management**: Automatic S3 cleanup when articles are updated/deleted
+5. **Deployment**: Backend deployed on Google Cloud Run
+6. **Frontend**: Deployed on Vercel
 
 ## API Statistics
 
-**Total Endpoints**: **45**
+**Total Endpoints**: **49**
 - **7 entities** with full CRUD operations
+- **4 image upload endpoints** for articles
 - **3 special endpoints** (active pastor, latest pastor corner, posts by pastor)
 
 **Homepage API Calls**: **3**
-- Activities, Articles, and Pastor Corner
+- Activities, Articles (with S3 images), and Pastor Corner
 
 ## Recent Improvements
+
+### S3 Image Integration ✅ **New**
+- **Before**: Article images stored as URLs or file paths
+- **After**: Professional S3 integration with automatic management
+- **Features**: Upload, update, delete, validation, CDN support
+- **Benefits**: Scalable, secure, fast image delivery
 
 ### Pastor's Corner Evolution
 - **Before**: Static hardcoded welcome message
@@ -277,6 +425,10 @@ Currently, the API does not require authentication. All endpoints are publicly a
 - **Attribution**: Publication date display and pastor relationship
 
 ### Key Features Added
+- **S3 Image Storage**: Professional cloud storage for article thumbnails
+- **Image Validation**: Type and size validation with proper error handling
+- **Automatic Cleanup**: Old images deleted when articles updated/removed
+- **CDN Support**: CloudFront integration for faster global delivery
 - **Dynamic Content**: Pastor corner posts can be created and managed
 - **Pastor Association**: Each post is tied to a specific pastor
 - **Publication Control**: Posts can be published/unpublished
@@ -291,4 +443,7 @@ Potential areas for improvement:
 - Add search and filtering capabilities
 - Include rate limiting
 - Add request validation middleware
-- Implement caching for frequently accessed data 
+- Implement caching for frequently accessed data
+- Extend S3 integration to other entities (Pastor, Coordinator images)
+- Add image resizing and optimization
+- Implement image metadata extraction 
