@@ -13,14 +13,14 @@ import pastorCornerRoutes from "./routes/pastorCornerRoutes";
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8000;
 
 connectDB();
 app.use(express.json());
 app.use(cors());
 app.use(
   cors({
-    origin: ["http://localhost:5000", "https://church-site-seven.vercel.app"],
+    origin: ["http://localhost:3000", "http://localhost:8000", "https://church-site-seven.vercel.app"],
     methods: "GET,POST,PUT,DELETE,PATCH",
     allowedHeaders: "Content-Type,Authorization",
     credentials: true,
