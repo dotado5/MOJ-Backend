@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from "mongoose";
 
 export interface IArticle extends Document {
-  displayImage: string;
+  displayImage?: string;
   title: string;
   authorId: string;
   text: string;
@@ -10,7 +10,7 @@ export interface IArticle extends Document {
 }
 
 const entityASchema: Schema = new Schema({
-  displayImage: { type: String, required: true },
+  displayImage: { type: String, required: false },
   title: { type: String, required: true },
   authorId: { type: String, required: true },
   text: { type: String, required: true },

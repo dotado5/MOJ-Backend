@@ -5,7 +5,7 @@ export interface IMemory extends Document {
   height: number;
   width: number;
   imgType: string;
-  activityId: string;
+  activityId: string; // Keep as string to match existing data
 }
 
 const entityDSchema: Schema = new Schema({
@@ -13,7 +13,7 @@ const entityDSchema: Schema = new Schema({
   height: { type: Number, required: true },
   width: { type: Number, required: true },
   imgType: { type: String, required: true },
-  activityId: { type: String, required: true },
+  activityId: { type: String, required: true }, // Keep as string
 });
 
 export const Memory = mongoose.model<IMemory>(

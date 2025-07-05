@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createAuthor, getAllAuthors } from "../controllers/AuthorController";
+import { createAuthor, getAllAuthors, getAuthorById, updateAuthor, deleteAuthor } from "../controllers/AuthorController";
 
 const authorRoutes = Router();
 
@@ -76,5 +76,15 @@ authorRoutes.post("/", createAuthor);
  *         description: Internal server error.
  */
 authorRoutes.get("/", getAllAuthors);
+
+// Get author by ID
+authorRoutes.get("/:id", getAuthorById);
+
+// Update author by ID
+authorRoutes.put("/:id", updateAuthor);
+authorRoutes.patch("/:id", updateAuthor);
+
+// Delete author by ID
+authorRoutes.delete("/:id", deleteAuthor);
 
 export default authorRoutes;
