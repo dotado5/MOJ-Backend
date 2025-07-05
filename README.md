@@ -41,7 +41,7 @@ PORT=5000
 The API provides full CRUD operations for 7 main entities:
 
 - **Activities** - Church activities and events
-- **Articles** - Blog posts and articles  
+- **Articles** - Church articles and content  
 - **Authors** - Article authors
 - **Coordinators** - Church coordinators
 - **Memories** - Photo gallery items

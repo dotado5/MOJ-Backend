@@ -101,7 +101,7 @@ articleRoutes.post("/with-image", uploadSingle("image"), handleUploadError, crea
  * /articles/with-authors:
  *   get:
  *     summary: Get all articles with author information
- *     description: Retrieve all articles with populated author data, pagination, and enhanced metadata for blog page
+ *     description: Retrieve all articles with populated author data, pagination, and enhanced metadata for articles page
  *     parameters:
  *       - in: query
  *         name: page

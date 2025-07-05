@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand, ObjectCannedACL } from "@aws-sdk/client-s3";
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from "@aws-sdk/client-s3";
 import { Upload } from "@aws-sdk/lib-storage";
 import * as crypto from "crypto";
 import * as path from "path";
@@ -17,13 +17,13 @@ const CLOUDFRONT_URL = process.env.CLOUDFRONT_URL || "";
 
 class S3Service {
   /**
-   * Upload an image to S3
+   * Upload a file to S3 (images, audio, etc.)
    * @param file - The file buffer to upload
    * @param originalName - Original filename
-   * @param folder - S3 folder (e.g., 'articles', 'pastors')
+   * @param folder - S3 folder (e.g., 'articles', 'pastors', 'audio')
    * @returns Promise with the S3 URL
    */
-  async uploadImage(
+  async uploadFile(
     file: Buffer,
     originalName: string,
     folder: string = "articles"
@@ -38,7 +38,7 @@ class S3Service {
         Key: fileName,
         Body: file,
         ContentType: this.getContentType(fileExtension),
-        ACL: ObjectCannedACL.public_read, // Make the image publicly accessible
+        // Removed ACL setting - bucket uses bucket policy instead
       };
 
       const upload = new Upload({
@@ -93,12 +93,31 @@ class S3Service {
    */
   private getContentType(extension: string): string {
     const mimeTypes: { [key: string]: string } = {
+      // Image types
       ".jpg": "image/jpeg",
       ".jpeg": "image/jpeg",
       ".png": "image/png",
       ".gif": "image/gif",
       ".webp": "image/webp",
       ".svg": "image/svg+xml",
+      // Audio types
+      ".mp3": "audio/mpeg",
+      ".wav": "audio/wav",
+      ".wave": "audio/wav",
+      ".m4a": "audio/m4a",
+      ".mp4": "audio/mp4",
+      ".aac": "audio/aac",
+      ".ogg": "audio/ogg",
+      ".oga": "audio/ogg",
+      ".flac": "audio/flac",
+      ".opus": "audio/opus",
+      ".webm": "audio/webm",
+      ".3gp": "audio/3gpp",
+      ".3g2": "audio/3gpp2",
+      ".amr": "audio/amr",
+      ".mid": "audio/midi",
+      ".midi": "audio/midi",
+      ".wma": "audio/wma",
     };
 
     return mimeTypes[extension.toLowerCase()] || "application/octet-stream";
@@ -151,13 +170,99 @@ class S3Service {
   }
 
   /**
-   * Validate file size (max 5MB)
+   * Validate if file is an audio file
+   * @param mimetype - File MIME type
+   * @returns boolean
+   */
+  isValidAudioType(mimetype: string): boolean {
+    const allowedTypes = [
+      // Standard audio types
+      "audio/mpeg",        // MP3
+      "audio/mp3",         // MP3 (alternative)
+      "audio/wav",         // WAV
+      "audio/wave",        // WAV (alternative)
+      "audio/x-wav",       // WAV (alternative)
+      "audio/m4a",         // M4A
+      "audio/mp4",         // M4A/MP4 audio
+      "audio/aac",         // AAC
+      "audio/x-aac",       // AAC (alternative)
+      "audio/ogg",         // OGG
+      "audio/vorbis",      // OGG Vorbis
+      "audio/flac",        // FLAC
+      "audio/x-flac",      // FLAC (alternative)
+      "audio/webm",        // WebM audio
+      "audio/opus",        // Opus
+      "audio/3gpp",        // 3GP audio
+      "audio/3gpp2",       // 3G2 audio
+      "audio/amr",         // AMR
+      "audio/basic",       // Basic audio
+      "audio/mid",         // MIDI
+      "audio/midi",        // MIDI
+      "audio/x-midi",      // MIDI (alternative)
+      "audio/wma",         // Windows Media Audio
+      "audio/x-ms-wma",    // Windows Media Audio (alternative)
+      // Additional common types that browsers might report
+      "audio/x-m4a",       // M4A (alternative)
+      "audio/mp4a-latm",   // M4A (MPEG-4 audio)
+      "audio/mpeg4-generic", // M4A (alternative)
+    ];
+    
+    const normalizedMimetype = mimetype.toLowerCase();
+    const isValid = allowedTypes.includes(normalizedMimetype);
+    
+    // Debug logging
+    console.log("Audio validation:", {
+      mimetype: mimetype,
+      normalized: normalizedMimetype,
+      isValid: isValid,
+      allowedTypes: allowedTypes.filter(type => type.includes('m4a') || type.includes('mp4'))
+    });
+    
+    return isValid;
+  }
+
+  /**
+   * Validate file size for images (max 5MB)
+   * @param size - File size in bytes
+   * @returns boolean
+   */
+  isValidImageSize(size: number): boolean {
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    return size <= maxSize;
+  }
+
+  /**
+   * Validate file size for audio (max 100MB)
+   * @param size - File size in bytes
+   * @returns boolean
+   */
+  isValidAudioSize(size: number): boolean {
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    return size <= maxSize;
+  }
+
+  /**
+   * Legacy method for backward compatibility
    * @param size - File size in bytes
    * @returns boolean
    */
   isValidFileSize(size: number): boolean {
-    const maxSize = 5 * 1024 * 1024; // 5MB
-    return size <= maxSize;
+    return this.isValidImageSize(size);
+  }
+
+  /**
+   * Legacy method for backward compatibility
+   * @param file - The file buffer to upload
+   * @param originalName - Original filename
+   * @param folder - S3 folder
+   * @returns Promise with the S3 URL
+   */
+  async uploadImage(
+    file: Buffer,
+    originalName: string,
+    folder: string = "articles"
+  ): Promise<string> {
+    return this.uploadFile(file, originalName, folder);
   }
 }
 

@@ -236,7 +236,7 @@ const getMemoriesByActivity = async (req: Request, res: Response) => {
       },
     });
   } catch (err) {
-    console.error(err);
+    console.error('Error in getMemoriesByActivity:', err);
     res.status(500).send({ 
       status: "Error", 
       message: "Failed to fetch activity memories" 
@@ -246,12 +246,19 @@ const getMemoriesByActivity = async (req: Request, res: Response) => {
 
 const getGalleryByEvents = async (req: Request, res: Response) => {
   try {
-    // Get all activities with their memory counts
+    console.log('Starting getGalleryByEvents aggregation...');
+    
+    // Get all activities with their memory counts using correct collection name
     const activitiesWithMemories = await Activity.aggregate([
       {
+        $addFields: {
+          activityIdString: { $toString: "$_id" }
+        }
+      },
+      {
         $lookup: {
-          from: "memories",
-          localField: "_id",
+          from: "Memories", // Capital M to match the model definition
+          localField: "activityIdString",
           foreignField: "activityId",
           as: "memories"
         }
@@ -259,8 +266,16 @@ const getGalleryByEvents = async (req: Request, res: Response) => {
       {
         $addFields: {
           memoryCount: { $size: "$memories" },
-          // Get first few memories as preview
-          previewMemories: { $slice: ["$memories", 3] }
+          // Get first 6 memories as preview
+          previewMemories: { $slice: [
+            {
+              $sortArray: {
+                input: "$memories",
+                sortBy: { _id: -1 } // Sort memories by newest first
+              }
+            },
+            6
+          ]}
         }
       },
       {
@@ -270,19 +285,102 @@ const getGalleryByEvents = async (req: Request, res: Response) => {
       },
       {
         $sort: { date: -1 } // Most recent events first
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          date: 1,
+          description: 1,
+          memoryCount: 1,
+          previewMemories: 1
+        }
       }
     ]);
 
+    console.log('Activities with memories found:', activitiesWithMemories.length);
+    
     res.status(200).send({
       status: "Success",
       message: "Gallery organized by events loaded successfully",
       data: activitiesWithMemories,
     });
   } catch (err) {
-    console.error(err);
+    console.error('Error in getGalleryByEvents:', err);
     res.status(500).send({ 
       status: "Error", 
       message: "Failed to fetch gallery by events" 
+    });
+  }
+};
+
+// Debug endpoint to test gallery aggregation
+const debugGalleryAggregation = async (req: Request, res: Response) => {
+  try {
+    console.log('=== DEBUG GALLERY AGGREGATION ===');
+    
+    // Check counts
+    const activityCount = await Activity.countDocuments();
+    const memoryCount = await Memory.countDocuments();
+    
+    console.log(`Activities: ${activityCount}, Memories: ${memoryCount}`);
+    
+    // Get sample data
+    const sampleActivity = await Activity.findOne();
+    const sampleMemory = await Memory.findOne();
+    
+    console.log('Sample Activity ID:', sampleActivity?._id?.toString());
+    console.log('Sample Memory activityId:', sampleMemory?.activityId);
+    
+    // Test simple aggregation
+    const testResult = await Activity.aggregate([
+      {
+        $addFields: {
+          activityIdString: { $toString: "$_id" }
+        }
+      },
+      {
+        $lookup: {
+          from: "Memories",
+          localField: "activityIdString", 
+          foreignField: "activityId",
+          as: "memories"
+        }
+      },
+      {
+        $addFields: {
+          memoryCount: { $size: "$memories" }
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          activityIdString: 1,
+          memoryCount: 1,
+          sampleMemoryId: { $arrayElemAt: ["$memories.activityId", 0] }
+        }
+      }
+    ]);
+    
+    console.log('Test aggregation results:', testResult.length);
+    
+    res.status(200).send({
+      status: "Success",
+      message: "Debug completed",
+      data: {
+        activityCount,
+        memoryCount,
+        sampleActivityId: sampleActivity?._id?.toString(),
+        sampleMemoryActivityId: sampleMemory?.activityId,
+        aggregationResults: testResult
+      }
+    });
+  } catch (err) {
+    console.error('Debug error:', err);
+    const error = err as Error;
+    res.status(500).send({ 
+      status: "Error", 
+      message: error.message 
     });
   }
 };
@@ -473,6 +571,7 @@ export {
   getAllMemories, 
   getMemoriesByActivity,
   getGalleryByEvents,
+  debugGalleryAggregation,
   getMemoryById, 
   updateMemory,
   updateMemoryWithImage, 

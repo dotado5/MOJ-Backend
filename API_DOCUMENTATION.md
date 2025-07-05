@@ -103,14 +103,14 @@ GET https://api-2at6qg5khq-uc.a.run.app/coordinator
 - **Used for**: Coordinators Spotlight section (filtered to exclude featured)
 - **Data Structure**: `{ _id, name, occupation, phone_number, image_url, about, isFeatured }`
 
-## Frontend Blog Page Integration ✅ **New**
+## Frontend Articles Page Integration ✅ **New**
 
-### Blog Page Location
-- **Frontend URL**: `https://church-site-seven.vercel.app/blogs`
-- **Page Component**: `Church-Site/Frontend/src/app/(main)/blogs/page.tsx`
+### Articles Page Location
+- **Frontend URL**: `https://church-site-seven.vercel.app/articles`
+- **Page Component**: `Church-Site/Frontend/src/app/(main)/articles/page.tsx`
 
-### Blog Page Data Requirements
-The blog page displays a comprehensive list of all articles with full author information:
+### Articles Page Data Requirements
+The articles page displays a comprehensive list of all articles with full author information:
 
 #### 1. Articles with Authors Section
 - **Section**: "Latest Articles"
@@ -126,7 +126,7 @@ The blog page displays a comprehensive list of all articles with full author inf
 - **Features**: Previous/Next buttons, page numbers, article count display
 - **Performance**: Only loads articles for current page
 
-### Blog Page API Calls
+### Articles Page API Calls
 
 #### 1. Enhanced Articles with Pagination ✅ **New**
 ```
@@ -155,7 +155,7 @@ https://api-2at6qg5khq-uc.a.run.app
 
 ### 2. Article Endpoints ✅ **Enhanced with Author Population & Blog Integration**
 - `GET /article` - Get all articles (basic) ✅ **Legacy endpoint**
-- `GET /article/with-authors` - Get articles with author info & pagination ✅ **New - Used on Homepage & Blog Page**
+- `GET /article/with-authors` - Get articles with author info & pagination ✅ **New - Used on Homepage & Articles Page**
 - `GET /article/:id` - Get article by ID (basic)
 - `GET /article/:id/with-author` - Get article by ID with author info ✅ **New**
 - `POST /article` - Create article (JSON only)
@@ -600,7 +600,7 @@ Currently, the API does not require authentication. All endpoints are publicly a
 
 1. **Homepage Performance**: The homepage makes 3 concurrent API calls on load
 2. **Coordinators Page Performance**: The coordinators page makes 2 concurrent API calls on load
-3. **Blog Page Performance**: The blog page makes 1 API call with pagination for optimal loading
+3. **Articles Page Performance**: The articles page makes 1 API call with pagination for optimal loading
 4. **Data Validation**: All update operations include validation
 5. **Image Management**: Automatic S3 cleanup when articles/coordinators are updated/deleted
 6. **Featured System**: Only one coordinator can be featured at a time
@@ -622,7 +622,7 @@ Currently, the API does not require authentication. All endpoints are publicly a
 **Coordinators Page API Calls**: **2**
 - Featured Coordinator and All Coordinators (with S3 images)
 
-**Blog Page API Calls**: **1**
+**Articles Page API Calls**: **1**
 - Enhanced Articles with Authors and Pagination (with S3 images)
 
 ## Recent Improvements
@@ -656,9 +656,9 @@ Currently, the API does not require authentication. All endpoints are publicly a
   - Fallback handling when no featured coordinator exists
 - **Benefits**: Fully dynamic, data-driven, maintainable
 
-### Blog Page Integration ✅ **New**
+### Articles Page Integration ✅ **New**
 - **Before**: Mixed dummy and real data, hardcoded authors, static images
-- **After**: Fully dynamic blog page with complete author integration
+- **After**: Fully dynamic articles page with complete author integration
 - **Features**:
   - Real author information populated from Author collection
   - S3 images for all article thumbnails
@@ -668,7 +668,7 @@ Currently, the API does not require authentication. All endpoints are publicly a
   - Pagination for large article collections
   - Responsive grid layout
   - Loading states and error handling
-- **Benefits**: Professional blog experience, scalable content management
+- **Benefits**: Professional articles experience, scalable content management
 
 ### Enhanced Articles System ✅ **New**
 - **Before**: Basic article data without author details
@@ -686,7 +686,7 @@ Currently, the API does not require authentication. All endpoints are publicly a
 - **Before**: Homepage mixed dummy data with real article content
 - **After**: Homepage uses enhanced articles with full author data
 - **Features**: Real S3 images, author names, proper read times, excerpts
-- **Benefits**: Consistent data across homepage and blog page
+- **Benefits**: Consistent data across homepage and articles page
 
 ### Pastor's Corner Evolution ✅ **Previous**
 - **Before**: Static hardcoded welcome message
@@ -710,7 +710,7 @@ Currently, the API does not require authentication. All endpoints are publicly a
 - **Publication Control**: Posts can be published/unpublished
 - **Homepage Integration**: Latest post automatically appears
 - **Coordinators Page Integration**: Featured coordinator and all coordinators display properly
-- **Blog Page Integration**: Professional blog experience with full author details
+- **Articles Page Integration**: Professional articles experience with full author details
 - **Fallback Support**: Graceful handling when no posts/coordinators/authors exist
 - **Featured System**: One coordinator can be featured at a time with automatic management
 
